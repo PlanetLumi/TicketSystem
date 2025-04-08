@@ -127,9 +127,42 @@ public class PriorityQueue {
     }
 
 
+    public void updateTicketPriority(int ticketID, int newPriority, User currentUser) {
+        Ticket ticket = findTicketByID(ticketID);
+        if (ticket == null) {
+            System.out.println("Ticket not found.");
+            return;
+        }
 
+        // Check if the current user's security level meets the ticket's required level.
+        if (!SecurityUtil.hasRequiredPrivileges(currentUser, ticket.getSecurityLevel())) {
+            System.out.println("Access denied: insufficient security privileges to update this ticket.");
+            return;
+        }
 
+        // If the check passes, allow the update.
+        int oldPriority = ticket.getPriority();
+        ticket.setPriority(newPriority);
 
+        // Re-heapify as needed:
+        if (newPriority < oldPriority) {
+            // bubble up logic
+        } else if (newPriority > oldPriority) {
+            // bubble down logic
+        }
+    }
 
+    public void deleteTicket(int ticketID, User currentUser) {
+        Ticket ticket = findTicketByID(ticketID);
+        if (ticket == null) {
+            System.out.println("Ticket not found.");
+            return;
+        }
+        // Require at least TOPLEVEL privileges to delete a sensitive ticket.
+        if (!SecurityUtil.hasRequiredPrivileges(currentUser, SecurityLevel.TOPLEVEL)) {
+            System.out.println("Access denied: insufficient privileges to delete this ticket.");
+        }
+
+    }
 
 }

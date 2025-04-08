@@ -3,9 +3,9 @@ public class Main {
        PriorityQueue pq = new PriorityQueue(10);
 
         // Create some tickets
-        Ticket t1 = new Ticket("Fix network", "Alice", 2);
-        Ticket t2 = new Ticket("Reset password", "Bob", 1);
-        Ticket t3 = new Ticket("Install software", "Charlie", 3);
+        Ticket t1 = new Ticket("Fix network", "Alice", 2, currentUser);
+        Ticket t2 = new Ticket("Reset password", "Bob", 1, currentUser);
+        Ticket t3 = new Ticket("Install software", "Charlie", 3, currentUser);
 
         // Add them to priority queue
         pq.addTicket(t1);
@@ -30,5 +30,7 @@ public class Main {
         } else {
             System.out.println("Ticket not found.");
         }
+
     }
+
 }

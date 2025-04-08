@@ -5,13 +5,16 @@ public class Ticket {
     private String title;       // description
     private String creator;
     private String owner;       // assigned technician, if any
-    private int priority;       // smaller number = higher priority (1 = highest)
+    private int priority;     // smaller number = higher priority (1 = highest)
+    private SecurityLevel securityLevel; // field for security level
 
-    public Ticket(String title, String creator, int priority) {
+
+    public Ticket(String title, String creator, int priority, SecurityLevel securityLevel) {
         this.ticketID = ++globalIDCounter;  // unique ID
         this.title = title;
         this.creator = creator;
         this.priority = priority;
+        this.securityLevel = securityLevel;
     }
 
     // Getters and setters
@@ -43,10 +46,21 @@ public class Ticket {
         this.priority = priority;
     }
 
+    public SecurityLevel getSecurityLevel() {
+        return securityLevel;
+    }
+
+    public void setSecurityLevel(SecurityLevel securityLevel) {
+        this.securityLevel = securityLevel;
+    }
+
+
     @Override
     public String toString() {
         return "Ticket[ID=" + ticketID +
                 ", title='" + title + '\'' +
                 ", priority=" + priority + "]";
     }
+
+
 }
