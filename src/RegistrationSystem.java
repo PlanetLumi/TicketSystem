@@ -13,9 +13,13 @@ public class RegistrationSystem {
      * @param level    The desired security level for the account (e.g., BASE, ADMIN, TOPLEVEL).
      * @return True if registration succeeds; false otherwise.
      */
-    public boolean registerUser(String username, String password, UserRole role, SecurityLevel level) {
+    public static boolean registerUser(String username, String password, UserRole role, SecurityLevel level) {
         try {
-            // Sanitize the username to remove any unwanted characters.
+            if(!SecurityUtil.isPasswordComplex(password)) {
+                System.out.println("Error: Password is not complex enough.");
+                return false;
+            }
+            //  Sanitize the username to remove any unwanted characters.
             String sanitizedUsername = SecurityUtil.sanitizeInput(username);
 
             // Load persisted accounts from file.
@@ -51,16 +55,20 @@ public class RegistrationSystem {
 
             // Create the new user account.
             User newUser = new User(sanitizedUsername, saltedHash, role, level);
+            if(SecurityUtil.logEvent("Registered new user: " + sanitizedUsername, "REGISTERED" )) {
 
-            // Add the new user to the accounts list.
-            accounts.add(newUser);
+                // Add the new user to the accounts list.
+                accounts.add(newUser);
 
-            // Persist the updated accounts list to the file.
-            AccountPersistence.saveAccountsToFile(accounts, ACCOUNTS_FILE);
-            AccountPersistence.saveAccountsToFile(accounts, ACCOUNTS_FILE_COPY);
-
+                // Persist the updated accounts list to the file.
+                AccountPersistence.saveAccountsToFile(accounts, ACCOUNTS_FILE);
+                AccountPersistence.saveAccountsToFile(accounts, ACCOUNTS_FILE_COPY);
+            } else {
+                System.out.println("Error: COULD NOT LOG CREATION, PROCCESS FAILED.");
+                return false;
+            }
             // Log the registration event.
-            SecurityUtil.logEvent("Registered new user: " + sanitizedUsername);
+
             System.out.println("Registration successful for user: " + sanitizedUsername);
             return true;
         } catch (Exception e) {

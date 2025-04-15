@@ -12,15 +12,25 @@ public class LoginSystem {
      * @param password The plain-text password entered.
      * @return True if login succeeds; false otherwise.
      */
-    public boolean login(String username, String password) {
-        User user = validateUser(username, password);
-        if (user != null) {
-            // Set the current user in the session (only one active session allowed)
-            SessionManager.getInstance().setCurrentUser(user);
-            System.out.println("Login successful. Welcome, " + user.getUsername());
-            return true;
+    public boolean login(String username, String password) throws IOException {
+        if (SecurityUtil.logEvent("LOGIN ATTEMPT: " + username, "ATTEMPT")) {
+            User user = validateUser(username, password);
+            if (user != null) {
+                if (SecurityUtil.logEvent("Account Login " + user.getUsername(), "LOGIN")) {
+                    // Set the current user in the session (only one active session allowed)
+                    SessionManager.getInstance().setCurrentUser(user);
+                    System.out.println("Login successful. Welcome, " + user.getUsername());
+                    return true;
+                } else {
+                    System.out.println("System Log failed, account login failed.");
+                    return false;
+                }
+            } else {
+                System.out.println("Login failed.");
+                return false;
+            }
         } else {
-            System.out.println("Login failed.");
+            System.out.println("Login Attempt file log failed.");
             return false;
         }
     }
@@ -75,9 +85,19 @@ public class LoginSystem {
         }
         return null;
     }
-    public void logout() {
-            // Clear the session data.
+    public void logout() throws IOException {
+        // Retrieve the current user from the SessionManager.
+        User currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            String username = currentUser.getUsername();
+            // Log the logout event with the username.
+            SecurityUtil.logEvent("Account logout: " + username, "LOGOUT");
+            // Clear the current user session.
             SessionManager.getInstance().clearSession();
-            System.out.println("You have been logged out.");
+            System.out.println("User " + username + " has been logged out.");
+        } else {
+            System.out.println("No user is currently logged in.");
+        }
     }
+
 }

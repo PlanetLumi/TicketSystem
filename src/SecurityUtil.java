@@ -2,12 +2,16 @@ import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.EnumSet;
 import java.util.Set;
@@ -123,10 +127,6 @@ public class SecurityUtil {
      *
      * @param event The event message to log.
      */
-    public static void logEvent(String event) {
-        // For demonstration, we print to the console.
-        System.out.println("[AUDIT] " + event);
-    }
     /**
      * Generates a random salt as a hexadecimal string.
      *
@@ -200,5 +200,27 @@ public class SecurityUtil {
         String computedHash = hashWithSalt(password, salt);
         return storedHash.equals(computedHash);
     }
-
+    public static boolean logEvent(String eventDetails, String logID) throws IOException {
+        System.out.println("[AUDIT] " + eventDetails);
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        try(FileWriter writer = new FileWriter(FindAuditID.getAuditLogFileName(logID) + "primary.txt", true)) {
+            writer.write(timestamp + "," + eventDetails + "\n");
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        try(FileWriter writer = new FileWriter(FindAuditID.getAuditLogFileName(logID) + "backup.txt", true)) {
+            writer.write(timestamp + "," + eventDetails + "\n");
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+    public static boolean isPasswordComplex(String password) {
+        // Example: password must be at least 8 characters long, have one uppercase letter,
+        // one lowercase letter, one digit, and one special character (@, $, !, %, *, ?, &).
+        String pattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$";
+        return password.matches(pattern);
+    }
 }

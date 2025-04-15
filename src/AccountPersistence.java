@@ -67,25 +67,4 @@ public class AccountPersistence {
         return accounts;
     }
 
-    // For demonstration, a simple main method
-    public static void main(String[] args) {
-        List<User> accounts = new ArrayList<>();
-        // Create sample accounts
-        accounts.add(new User("adminUser", "hashedAdmin", UserRole.ADMIN, SecurityLevel.TOPLEVEL));
-        accounts.add(new User("techUser", "hashedTech", UserRole.TECHNICIAN, SecurityLevel.ADMIN));
-        accounts.add(new User("endUser", "hashedEnd", UserRole.END_USER, SecurityLevel.BASE));
-
-        // Save accounts to file
-        String filePath = "accounts.csv";
-        saveAccountsToFile(accounts, filePath);
-
-        // Reload accounts from file and print them
-        List<User> loadedAccounts = loadAccountsFromFile(filePath);
-        System.out.println("Loaded Accounts:");
-        for (User user : loadedAccounts) {
-            System.out.println("Username: " + user.getUsername() +
-                    " | Role: " + user.getRole() +
-                    " | Security Level: " + user.getSecurityLevel());
-        }
-    }
 }

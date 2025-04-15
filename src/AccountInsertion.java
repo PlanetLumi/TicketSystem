@@ -3,42 +3,21 @@ import java.util.List;
 
 public class AccountInsertion {
 
-    public static void main(String[] args) {
-        // List to store the created accounts.
-        List<User> accounts = new ArrayList<>();
-
-        try {
-            // Use salted hashing for passwords.
-            String adminSaltedHash = SecurityUtil.generateSaltedHash("adminPass");
-            String techSaltedHash = SecurityUtil.generateSaltedHash("techPass");
-            String endUserSaltedHash = SecurityUtil.generateSaltedHash("endPass");
-
-            // Sanitize usernames to ensure only valid characters are used.
-            String adminUsername = SecurityUtil.sanitizeInput("adminUser");
-            String techUsername = SecurityUtil.sanitizeInput("techUser");
-            String endUsername = SecurityUtil.sanitizeInput("endUser");
-
-            // Create accounts with roles and security levels.
-            // (Ensure your User class accepts these parameters.)
-            User adminAccount = new User(adminUsername, adminSaltedHash, UserRole.ADMIN, SecurityLevel.TOPLEVEL);
-            User technicianAccount = new User(techUsername, techSaltedHash, UserRole.TECHNICIAN, SecurityLevel.ADMIN);
-            User endUserAccount = new User(endUsername, endUserSaltedHash, UserRole.END_USER, SecurityLevel.BASE);
-
-            accounts.add(adminAccount);
-            accounts.add(technicianAccount);
-            accounts.add(endUserAccount);
-
-            // Log the account creation event using audit logging.
-            SecurityUtil.logEvent("Created admin account for " + adminAccount.getUsername());
-            SecurityUtil.logEvent("Created technician account for " + technicianAccount.getUsername());
-            SecurityUtil.logEvent("Created end-user account for " + endUserAccount.getUsername());
-
-            // Print inserted accounts and their security details.
-            System.out.println("Inserted Accounts:");
-            for (User account : accounts) {
-                System.out.println("Username: " + account.getUsername() +
-                        " | Role: " + account.getRole() +
-                        " | Security Level: " + account.getSecurityLevel());
+    public static void InsertAccounts(){
+        try{
+            if (RegistrationSystem.registerUser(SecurityUtil.sanitizeInput("endUser"), SecurityUtil.generateSaltedHash("endPass34!"), UserRole.END_USER, SecurityLevel.BASE)) {
+                System.out.println("Account created successfully");
+            } else{
+                System.out.println("EndUser account creation failed");
+            }
+            if (RegistrationSystem.registerUser(SecurityUtil.sanitizeInput("adminUser"), SecurityUtil.generateSaltedHash("adminPass46!"), UserRole.ADMIN, SecurityLevel.ADMIN)) {
+                System.out.println("Account created successfully");
+            } else{
+                System.out.println("Admin account creation failed");
+            }
+            if (RegistrationSystem.registerUser(SecurityUtil.sanitizeInput("techUser"), SecurityUtil.generateSaltedHash("techPass23!"), UserRole.TECHNICIAN, SecurityLevel.TOPLEVEL)) {
+            } else{
+                System.out.println("Technician account creation failed");
             }
         } catch (Exception e) {
             e.printStackTrace();
