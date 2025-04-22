@@ -1,3 +1,5 @@
+package Program;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -12,7 +14,7 @@ public class LoginSystem {
      * @param password The plain-text password entered.
      * @return True if login succeeds; false otherwise.
      */
-    public boolean login(String username, String password) throws IOException {
+    public static boolean login(String username, String password) throws IOException {
         if (SecurityUtil.logEvent("LOGIN ATTEMPT: " + username, "ATTEMPT")) {
             User user = validateUser(username, password);
             if (user != null) {
@@ -42,9 +44,9 @@ public class LoginSystem {
      *
      * @param username The entered username.
      * @param password The entered plain-text password.
-     * @return The corresponding User object if the credentials are valid; otherwise null.
+     * @return The corresponding Program.User object if the credentials are valid; otherwise null.
      */
-    private User validateUser(String username, String password) {
+    private static User validateUser(String username, String password) {
         try (BufferedReader reader = new BufferedReader(new FileReader("accounts.csv"))) {
             String line;
             // Read header line (assumed to be present) and ignore it.
@@ -64,7 +66,7 @@ public class LoginSystem {
                     if (fileUsername.equals(username)) {
                         // Use the security utility to verify the plain-text password against the stored salted hash.
                         if (SecurityUtil.verifyPassword(password, storedPasswordHash)) {
-                            // Create a User object from the file data.
+                            // Create a Program.User object from the file data.
                             User user = new User(
                                     fileUsername,
                                     storedPasswordHash,
@@ -85,8 +87,8 @@ public class LoginSystem {
         }
         return null;
     }
-    public void logout() throws IOException {
-        // Retrieve the current user from the SessionManager.
+    public static void logout() throws IOException {
+        // Retrieve the current user from the Program.SessionManager.
         User currentUser = SessionManager.getInstance().getCurrentUser();
         if (currentUser != null) {
             String username = currentUser.getUsername();
@@ -94,7 +96,7 @@ public class LoginSystem {
             SecurityUtil.logEvent("Account logout: " + username, "LOGOUT");
             // Clear the current user session.
             SessionManager.getInstance().clearSession();
-            System.out.println("User " + username + " has been logged out.");
+            System.out.println("Program.User " + username + " has been logged out.");
         } else {
             System.out.println("No user is currently logged in.");
         }

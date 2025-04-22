@@ -1,3 +1,5 @@
+package Program;
+
 public class FindAuditID {
 
     /**
@@ -21,13 +23,13 @@ public class FindAuditID {
             case "LOGOUT":
                 return "account_logout.log";
             case "TCREATION":
-                // Audit ID 3: Ticket creations
+                // Audit ID 3: Program.Ticket creations
                 return "ticket_creations.log";
             case "TUPDATE":
-                // Audit ID 4: Ticket updates
+                // Audit ID 4: Program.Ticket updates
                 return "ticket_updates.log";
             case "TDELETE":
-                // Audit ID 5: Ticket deletions
+                // Audit ID 5: Program.Ticket deletions
                 return "ticket_deletions.log";
             case "TCLOSE":
                     return "ticket_close.log";

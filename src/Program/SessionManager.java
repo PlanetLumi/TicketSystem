@@ -1,5 +1,7 @@
+package Program;
+
 public class SessionManager {
-    // A private static instance of the SessionManager (Singleton)
+    // A private static instance of the Program.SessionManager (Singleton)
     private static SessionManager instance;
 
     // Instance variable to hold the current user
@@ -8,7 +10,7 @@ public class SessionManager {
     // Private constructor to prevent instantiation from other classes.
     private SessionManager() { }
 
-    // Public method to get the single instance of SessionManager.
+    // Public method to get the single instance of Program.SessionManager.
     public static SessionManager getInstance() {
         if (instance == null) {
             instance = new SessionManager();

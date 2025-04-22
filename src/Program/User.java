@@ -1,3 +1,5 @@
+package Program;
+
 public class User {
     private String username;
     private String passwordHash;   // store a hashed & salted password

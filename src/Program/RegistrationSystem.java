@@ -1,3 +1,5 @@
+package Program;
+
 import java.util.List;
 
 public class RegistrationSystem {
@@ -34,7 +36,7 @@ public class RegistrationSystem {
             }
 
             // SECURITY CHECK:
-            // Get the current logged-in user from the SessionManager.
+            // Get the current logged-in user from the Program.SessionManager.
             User currentUser = SessionManager.getInstance().getCurrentUser();
             if (currentUser == null) {
                 // Self-registration: allow creation only of BASE accounts.

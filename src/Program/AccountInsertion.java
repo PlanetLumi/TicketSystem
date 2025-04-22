@@ -1,5 +1,4 @@
-import java.util.ArrayList;
-import java.util.List;
+package Program;
 
 public class AccountInsertion {
 
@@ -22,5 +21,8 @@ public class AccountInsertion {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+    public static void main(){
+        InsertAccounts();
     }
 }
