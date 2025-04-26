@@ -9,8 +9,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Program.PriorityQueue that uses a min-heap in memory, logs changes, and supports
- * encrypted snapshotting with role-based checks.
+ * Program.PriorityQueue that uses a min‑heap in memory, logs changes, and supports
+ * encrypted snapshotting with role‑based checks.
  */
 public class PriorityQueue implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -18,6 +18,7 @@ public class PriorityQueue implements Serializable {
     private final Lock lock = new ReentrantLock();
     private Ticket[] heap;
     private int size;
+    private transient TicketFileHandler fileHandler;
 
     private String logFilePath;
     private String snapshotFilePath;
@@ -25,29 +26,46 @@ public class PriorityQueue implements Serializable {
     private static final DateTimeFormatter TIMESTAMP_FMT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
-    public PriorityQueue(int capacity, String logFilePath, String snapshotFilePath) {
+    public PriorityQueue(int capacity) {
+        this(capacity, null, null);
+    }
+
+    public PriorityQueue(int capacity,
+                         String logFilePath,
+                         String snapshotFilePath) {
+
         this.heap = new Ticket[capacity];
         this.size = 0;
         this.logFilePath = logFilePath;
         this.snapshotFilePath = snapshotFilePath;
+
+        this.fileHandler = (logFilePath != null && snapshotFilePath != null)
+                ? new TicketFileHandler(logFilePath, snapshotFilePath)
+                : null;
     }
 
     public boolean isEmpty() { return size == 0; }
     public int getSize() { return size; }
-
+    private void readObject(ObjectInputStream in)
+            throws IOException, ClassNotFoundException {
+        in.defaultReadObject();                                 // do normal deserialise
+        if (logFilePath != null && snapshotFilePath != null) {  // recreate helper
+            this.fileHandler = new TicketFileHandler(logFilePath, snapshotFilePath);
+        }
+    }
     // ----------------------------
     //  NORMAL HEAP OPERATIONS
     // ----------------------------
-// (inside Program.PriorityQueue class)
 
     // helper to save a snapshot whenever the queue changes
     private void autoSnapshot(User user) {
-        try {
-            // always use the logged‑in user for the check
-            saveSnapshotBinary(user);
-        } catch (Exception e) {
-            // snapshot failures shouldn’t kill your app
-            System.err.println("Auto‑snapshot failed: " + e.getMessage());
+        if (user == null) return;                 // ← replay‑mode: skip
+        if (SecurityUtil.hasRequiredPrivileges(user, SecurityLevel.ADMIN)) {
+            try {
+                saveSnapshotBinary(user);
+            } catch (Exception e) {
+                System.err.println("Auto-snapshot failed: " + e.getMessage());
+            }
         }
     }
 
@@ -57,7 +75,9 @@ public class PriorityQueue implements Serializable {
             if (size == heap.length) throw new RuntimeException("Heap is full");
             heap[size++] = ticket;
             heapifyUp(size - 1);
-            SecurityUtil.logEvent("Program.User " + user.getUsername() + " created ticket...", "TCREATION");
+            if (fileHandler != null) fileHandler.logAdd(ticket);
+            String actor = (user != null ? user.getUsername() : "SYSTEM");
+            SecurityUtil.logEvent("User " + actor + " created ticket...", "TCREATION");
         } finally {
             lock.unlock();
         }
@@ -73,7 +93,9 @@ public class PriorityQueue implements Serializable {
             heap[idx].setPriority(newPriority);
             heapifyUp(idx);
             heapifyDown(idx);
-            SecurityUtil.logEvent("Program.User " + user.getUsername() + " updated ticket...", "TUPDATE");
+            String actor = (user != null ? user.getUsername() : "SYSTEM");
+            SecurityUtil.logEvent("User " + actor + " updated ticket...", "TUPDATE");
+            if (fileHandler != null) fileHandler.logUpdate(heap[idx]);
             ok = true;
         } finally {
             lock.unlock();
@@ -91,7 +113,9 @@ public class PriorityQueue implements Serializable {
             heap[idx] = heap[--size];
             heap[size] = null;
             heapifyDown(idx);
-            SecurityUtil.logEvent("Program.User " + user.getUsername() + " deleted ticket...", "TDELETE");
+            if (fileHandler != null) fileHandler.logDelete(ticketID);
+            String actor = (user != null ? user.getUsername() : "SYSTEM");
+            SecurityUtil.logEvent("User " + actor + " deleted ticket...", "TDELETE");
             ok = true;
         } finally {
             lock.unlock();
@@ -105,12 +129,13 @@ public class PriorityQueue implements Serializable {
         lock.lock();
         try {
             if (size == 0) return null;
-            // find first accessible
             for (int i = 0; i < size; i++) {
-                if (heap[i].getSecurityLevel().ordinal() <= user.getSecurityLevel().ordinal()) {
+                if (user == null ||
+                        heap[i].getSecurityLevel().ordinal() <= user.getSecurityLevel().ordinal()) {
                     result = heap[i];
                     deleteTicket(result.getTicketID(), user);
-                    SecurityUtil.logEvent("Program.User " + user.getUsername() + " polled ticket...", "TUPDATE");
+                    String actor = (user != null ? user.getUsername() : "SYSTEM");
+                    SecurityUtil.logEvent("User " + actor + " polled ticket...", "TUPDATE");
                     break;
                 }
             }
@@ -121,13 +146,13 @@ public class PriorityQueue implements Serializable {
         return result;
     }
 
-
     public List<Ticket> listAccessibleTickets(User user) {
         List<Ticket> accessible = new ArrayList<>();
         lock.lock();
         try {
             for (int i = 0; i < size; i++) {
-                if (heap[i].getSecurityLevel().ordinal() <= user.getSecurityLevel().ordinal()) {
+                if (user == null ||
+                        heap[i].getSecurityLevel().ordinal() <= user.getSecurityLevel().ordinal()) {
                     accessible.add(heap[i]);
                 }
             }
@@ -143,7 +168,8 @@ public class PriorityQueue implements Serializable {
         try {
             for (int i = 0; i < size; i++) {
                 Ticket t = heap[i];
-                if (t.getSecurityLevel().ordinal() <= user.getSecurityLevel().ordinal() &&
+                if ((user == null ||
+                        t.getSecurityLevel().ordinal() <= user.getSecurityLevel().ordinal()) &&
                         t.getTitle().toLowerCase().contains(titleQuery.toLowerCase())) {
                     matches.add(t);
                 }
@@ -164,9 +190,6 @@ public class PriorityQueue implements Serializable {
     }
 
     // --- Snapshot & Security Features ---
-    /**
-     * Saves the entire queue to an encrypted snapshot file (only ADMIN).
-     */
     public void saveSnapshotBinary(User currentUser) throws Exception {
         if (!SecurityUtil.hasRequiredPrivileges(currentUser, SecurityLevel.ADMIN)) {
             SecurityUtil.logEvent("Unauthorized snapshot attempt by user " + currentUser.getUsername(), "TCLOSE");
@@ -197,13 +220,10 @@ public class PriorityQueue implements Serializable {
             System.out.println("Snapshot saved to " + snapshotFilePath);
         } finally {
             lock.unlock();
-            SecurityUtil.logEvent("Program.User " + currentUser.getUsername() + " completed snapshot.", "TCLOSE");
+            SecurityUtil.logEvent("User " + currentUser.getUsername() + " completed snapshot.", "TCLOSE");
         }
     }
 
-    /**
-     * Loads the queue from an encrypted snapshot file.
-     */
     public static PriorityQueue loadFromSnapshotBinary(String snapshotPath) throws Exception {
         File snap = new File(snapshotPath);
         if (!snap.exists()) {
@@ -220,9 +240,6 @@ public class PriorityQueue implements Serializable {
         }
     }
 
-    /**
-     * Truncates (deletes) the append-only log. Only ADMIN.
-     */
     public void truncateLog(User currentUser) throws IOException {
         if (!SecurityUtil.hasRequiredPrivileges(currentUser, SecurityLevel.ADMIN)) {
             SecurityUtil.logEvent("Unauthorized log truncate by " + currentUser.getUsername(), "TCLOSE");
@@ -234,7 +251,7 @@ public class PriorityQueue implements Serializable {
         try {
             File f = new File(logFilePath);
             if (f.exists()) f.delete();
-            SecurityUtil.logEvent("Program.User " + currentUser.getUsername() + " truncated log.", "TCLOSE");
+            SecurityUtil.logEvent("User " + currentUser.getUsername() + " truncated log.", "TCLOSE");
         } finally {
             lock.unlock();
         }
@@ -254,13 +271,13 @@ public class PriorityQueue implements Serializable {
     private void heapifyDown(int i) {
         while (true) {
             int l = 2*i+1, r = 2*i+2, s = i;
-            if (l < size && heap[l].getPriority() < heap[s].getPriority()) s=l;
-            if (r < size && heap[r].getPriority() < heap[s].getPriority()) s=r;
-            if (s!=i) { swap(i,s); i=s; } else break;
+            if (l < size && heap[l].getPriority() < heap[s].getPriority()) s = l;
+            if (r < size && heap[r].getPriority() < heap[s].getPriority()) s = r;
+            if (s != i) { swap(i, s); i = s; } else break;
         }
     }
-    private void swap(int a, int b) { Ticket t=heap[a]; heap[a]=heap[b]; heap[b]=t; }
-    private int findIndexByID(int id) { for(int i=0;i<size;i++) if(heap[i].getTicketID()==id) return i; return -1; }
-    public int getMaxTicketID() { int m=0; lock.lock(); try{ for(int i=0;i<size;i++) m=Math.max(m, heap[i].getTicketID()); } finally{lock.unlock();} return m; }
-    public List<Ticket> getAllTickets(){ List<Ticket> list=new ArrayList<>(); lock.lock(); try{ for(int i=0;i<size;i++) list.add(heap[i]); } finally{lock.unlock();} return list; }
+    private void swap(int a, int b) { Ticket t = heap[a]; heap[a] = heap[b]; heap[b] = t; }
+    private int findIndexByID(int id) { for (int i = 0; i < size; i++) if (heap[i].getTicketID() == id) return i; return -1; }
+    public int getMaxTicketID() { int m = 0; lock.lock(); try { for (int i = 0; i < size; i++) m = Math.max(m, heap[i].getTicketID()); } finally { lock.unlock(); } return m; }
+    public List<Ticket> getAllTickets() { List<Ticket> list = new ArrayList<>(); lock.lock(); try { for (int i = 0; i < size; i++) list.add(heap[i]); } finally { lock.unlock(); } return list; }
 }

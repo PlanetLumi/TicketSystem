@@ -23,7 +23,16 @@ public class AccountPersistence {
             path = copyPathOverride;
         }
         try (FileWriter writer = new FileWriter(path)) {
-            writer.write("username,role,securityLevel\n");
+            writer.write("username,role,securityLevel,passwordHash\n");
+            for (User u : accounts) {
+                writer.write(
+                        u.getUsername() + "," +
+                                u.getRole() + "," +
+                                u.getSecurityLevel() + "," +
+                                u.getPasswordHash() +   // ← write out the real hash
+                                "\n"
+                );
+            }
             for (User u : accounts) {
                 writer.write(u.getUsername() + "," + u.getRole() + "," + u.getSecurityLevel() + "\n");
             }
@@ -43,12 +52,12 @@ public class AccountPersistence {
             if (line == null) return accounts;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
-                if (parts.length >= 3) {
-                    accounts.add(new User(
-                            parts[0],
-                            "restoredHash",
-                            UserRole.valueOf(parts[1]),
-                            SecurityLevel.valueOf(parts[2])
+                    if (parts.length >= 4) {
+                        accounts.add(new User(
+                                parts[0],                           // username
+                                parts[3],                           // restore the real salted hash!
+                                UserRole.valueOf(parts[1]),
+                                SecurityLevel.valueOf(parts[2])
                     ));
                 }
             }

@@ -14,7 +14,7 @@ class PriorityQueueTest {
 
     @BeforeEach
     void setUp() {
-        queue = new PriorityQueue(10, /*logFilePath=*/null, /*snapshotFilePath=*/null);
+        queue = new PriorityQueue(10);
         baseUser = new User("alice", "h", UserRole.END_USER, SecurityLevel.BASE);
         techUser = new User("bob",   "h", UserRole.TECHNICIAN, SecurityLevel.TOPLEVEL);
     }
@@ -32,6 +32,21 @@ class PriorityQueueTest {
         assertEquals(1, queue.getSize());
         assertEquals(low, queue.peek());
     }
+    @Test
+    void claimThenCompleteWorks() {
+        PriorityQueue q = new PriorityQueue(10);
+        User tech = new User("bob","h",UserRole.TECHNICIAN,SecurityLevel.TOPLEVEL);
+        Ticket t = new Ticket(RequestType.NETWORK,"Net", "alice");     // id=1
+        q.addTicket(t, tech);
+
+        // claim (peek)
+        Ticket top = q.peek();
+        top.setOwner("bob");
+        // complete (delete)
+        assertTrue(q.deleteTicket(top.getTicketID(), tech));
+        assertTrue(q.isEmpty());
+    }
+
 
     @Test
     void updatePriorityReordersHeap() {

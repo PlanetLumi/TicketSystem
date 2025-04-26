@@ -25,4 +25,5 @@ public class User {
     public SecurityLevel getSecurityLevel() {
         return securityLevel;
     }
+    public String getPasswordHash() {return passwordHash;}
 }

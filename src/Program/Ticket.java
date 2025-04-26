@@ -13,17 +13,38 @@ public class Ticket implements Serializable {
     private int priority;     // smaller number = higher priority (1 = highest)
     private SecurityLevel securityLevel; // field for security level
     private TicketStatus status;
+    private final RequestType type;
 
-
-    public Ticket(String title, String creator, int priority, SecurityLevel securityLevel) {
-        this.ticketID = ++globalIDCounter;  // unique ID
-        this.title = title;
-        this.creator = creator;
-        this.priority = priority;
-        this.securityLevel = securityLevel;
-        this.status = TicketStatus.OPEN; // default on creation
-
+    public Ticket(RequestType type, String title, String creator) {
+        this(type, title, creator,
+                type.getDefaultPriority(),               // auto-priority
+                type.getDefaultLvl());                   // auto-security
     }
+    public Ticket(String title,
+                  String creator,
+                  int priority,
+                  SecurityLevel level) {
+        this(RequestType.OTHER,      // default type
+                title,
+                creator,
+                priority,
+                level);
+    }
+    public Ticket(RequestType type, String title, String creator,
+                  int priorityOverride, SecurityLevel levelOverride) {
+        this.ticketID = ++globalIDCounter;
+        this.type     = type;
+        this.title    = title;
+        this.creator  = creator;
+        this.priority = priorityOverride;
+        this.securityLevel = levelOverride;
+        this.status   = TicketStatus.OPEN;
+    }
+    // Ticket.java  (add near the other ctors)
+
+    public RequestType getType() { return type; }
+
+
     public static synchronized void syncGlobalIDCounter(int highestID) {
         // If globalIDCounter is already higher, leave it.
         // If highestID is bigger, set it to highestID so new tickets won't reuse an old ID.
