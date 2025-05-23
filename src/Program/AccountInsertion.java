@@ -12,6 +12,7 @@ public class AccountInsertion {
         InsertAccounts();
     }
     public static void InsertAccounts(){
+        //Insert accounts for baseline logins - assumes a fundamental login of IT team
         try{
             if (RegistrationSystem.registerUser("endUser","endPass3!", UserRole.END_USER, SecurityLevel.BASE)) {
                 System.out.println("Account created successfully");

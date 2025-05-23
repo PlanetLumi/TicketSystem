@@ -6,18 +6,14 @@ import java.io.IOException;
 
 public class LoginSystem {
 
-    /**
-     * Attempts to log in a user by reading the persisted accounts file ("accounts.csv")
-     * and validating the provided credentials. Only one user can log in at a time.
-     *
-     * @param username The username entered by the user.
-     * @param password The plain-text password entered.
-     * @return True if login succeeds; false otherwise.
-     */
+   //Set the current session to user details and return boolean
     public static boolean login(String username, String password) throws IOException {
+        //Log attempt
         if (SecurityUtil.logEvent("LOGIN ATTEMPT: " + username, "ATTEMPT")) {
+            //checks against saved details from given login parameters
             User user = validateUser(username, password);
             if (user != null) {
+                //Do not allow login if not logged into audit, even if standard, security standard
                 if (SecurityUtil.logEvent("Account Login " + user.getUsername(), "LOGIN")) {
                     // Set the current user in the session (only one active session allowed)
                     SessionManager.getInstance().setCurrentUser(user);
@@ -37,16 +33,10 @@ public class LoginSystem {
         }
     }
 
-    /**
-     * Validates the entered username and password by scanning the accounts file.
-     * This method reads the file "accounts.csv" line by line (without loading all accounts into memory)
-     * and checks if the provided credentials match an entry.
-     *
-     * @param username The entered username.
-     * @param password The entered plain-text password.
-     * @return The corresponding Program.User object if the credentials are valid; otherwise null.
-     */
+
+    //Validate users by given details
     private static User validateUser(String username, String password) {
+        //Find main account filebase
         try (BufferedReader reader = new BufferedReader(new FileReader("accounts.csv"))) {
             String line;
             // Read header line (assumed to be present) and ignore it.
@@ -64,9 +54,9 @@ public class LoginSystem {
                     String securityLevelString = parts[2];
                     String storedPasswordHash = parts[3];
                     if (fileUsername.equals(username)) {
-                        // Use the security utility to verify the plain-text password against the stored salted hash.
+                        // Security util verifys against hash which cannot be done directly
                         if (SecurityUtil.verifyPassword(password, storedPasswordHash)) {
-                            // Create a Program.User object from the file data.
+                            // Create a user object from the file data.
                             User user = new User(
                                     fileUsername,
                                     storedPasswordHash,
@@ -87,8 +77,9 @@ public class LoginSystem {
         }
         return null;
     }
+    //Log user out
     public static void logout() throws IOException {
-        // Retrieve the current user from the Program.SessionManager.
+        // Retrieve the current user from the sessionManager.
         User currentUser = SessionManager.getInstance().getCurrentUser();
         if (currentUser != null) {
             String username = currentUser.getUsername();

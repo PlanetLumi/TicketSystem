@@ -17,7 +17,6 @@ class RegistrationSystemTest {
 
     @BeforeEach
     void setup() {
-        // Redirect the constants via reflection or by copying to working dir
         accountsFile = tmp.resolve("accounts.csv");
         accountsCopy = tmp.resolve("accounts2.csv");
         // Create an empty accounts file with a header
@@ -25,7 +24,7 @@ class RegistrationSystemTest {
             pw.println("username,role,securityLevel,passwordHash");
         } catch (IOException e) { fail(e); }
 
-        // Ensure the persistence layer uses our temp files
+        // Ensure the persistence layer uses temp files
         AccountPersistence.setPaths(accountsFile.toString(), accountsCopy.toString());
         // Clear any session user
         SessionManager.getInstance().clearSession();
@@ -39,7 +38,6 @@ class RegistrationSystemTest {
 
     @Test
     void allowsSelfRegistrationAtBaseOnly() {
-        // BASE is fine
         assertTrue(RegistrationSystem.registerUser("joe","Aa1@aaaa",UserRole.END_USER,SecurityLevel.BASE));
         // Cannot self-register at TOPLEVEL
         assertFalse(RegistrationSystem.registerUser("jane","Aa1@aaaa",UserRole.END_USER,SecurityLevel.TOPLEVEL));
@@ -56,11 +54,9 @@ class RegistrationSystemTest {
         // Log in a BASE user
         User sess = new User("admin","h",UserRole.END_USER,SecurityLevel.BASE);
         SessionManager.getInstance().setCurrentUser(sess);
-
         // Cannot create a TOPLEVEL account
         assertFalse(RegistrationSystem.registerUser("x","Aa1@aaaa",UserRole.TECHNICIAN,SecurityLevel.TOPLEVEL));
-
-        // But can create another BASE account
+        //Create another BASE account
         assertTrue(RegistrationSystem.registerUser("y","Aa1@aaaa",UserRole.END_USER,SecurityLevel.BASE));
     }
 }

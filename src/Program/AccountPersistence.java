@@ -1,4 +1,4 @@
-// src/main/java/Program/AccountPersistence.java
+
 package Program;
 
 import java.io.*;
@@ -9,7 +9,6 @@ public class AccountPersistence {
     private static String mainPathOverride;
     private static String copyPathOverride;
 
-    /** Called by tests to redirect "accounts.csv" and "accounts2.csv". */
     public static void setPaths(String main, String copy) {
         mainPathOverride = main;
         copyPathOverride = copy;
@@ -29,7 +28,7 @@ public class AccountPersistence {
                         u.getUsername() + "," +
                                 u.getRole() + "," +
                                 u.getSecurityLevel() + "," +
-                                u.getPasswordHash() +   // ← write out the real hash
+                                u.getPasswordHash() +   //real hash
                                 "\n"
                 );
             }
@@ -43,6 +42,7 @@ public class AccountPersistence {
 
     public static List<User> loadAccountsFromFile(String filePath) {
         String path = filePath;
+        //main account directory
         if ("accounts.csv".equals(filePath) && mainPathOverride != null) {
             path = mainPathOverride;
         }
@@ -55,7 +55,7 @@ public class AccountPersistence {
                     if (parts.length >= 4) {
                         accounts.add(new User(
                                 parts[0],                           // username
-                                parts[3],                           // restore the real salted hash!
+                                parts[3],                           // restore the real salted hash
                                 UserRole.valueOf(parts[1]),
                                 SecurityLevel.valueOf(parts[2])
                     ));

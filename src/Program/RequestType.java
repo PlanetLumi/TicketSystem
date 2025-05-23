@@ -1,7 +1,6 @@
 package Program;
 
-/** Five canonical request kinds with their default priority
- *  (smaller number = higher priority) and a suggested security level. */
+//Creates basic priority associations and assign attributes
 public enum RequestType {
     SECURITY        (1, SecurityLevel.TOPLEVEL, "Security issue (password reset, phishing, …)"),
     NETWORK         (2, SecurityLevel.BASE,     "Network outage / connectivity"),

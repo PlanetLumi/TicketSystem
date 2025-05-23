@@ -8,54 +8,40 @@ import java.nio.file.Path;
 import java.security.KeyStore;
 import java.util.Scanner;
 
-/**
- * Clean, single‑loop version of the interactive CLI runner.
- *
- * <p>Key points:
- * <ul>
- *     <li>Only <b>one</b> global <code>exitApp</code> flag.</li>
- *     <li>Scanner is created once and closed once.</li>
- *     <li>Auth menu and main menu factored into helper methods.</li>
- *     <li>Snapshot hook guarantees encrypted backup on JVM shutdown.</li>
- * </ul>
- */
+
 public class Main {
 
-    // -------------------------------------------------------------------------
-    // Configuration (never hard‑code secrets – these come from env‑vars)
-    // -------------------------------------------------------------------------
-
+    //Inputted key-vault directories, simulating real application
     private static final Path KEYSTORE_PATH = Path.of(System.getenv("KEYSTORE_PATH"));
     private static final Path KEYSTORE_FILE = Path.of(System.getenv("KEYSTORE_FILE"));
 
     private static final String SNAPSHOT_PATH = "tickets.snapshot";
     private static final String LOG_PATH = "ticketsLog.csv";
 
-    private static boolean exitApp = false;   // single flag controlling program lifetime
+    private static boolean exitApp = false;   // single flag controlling whether quit occurs
 
-    // -------------------------------------------------------------------------
-    // Main entry
-    // -------------------------------------------------------------------------
 
+    //main pipeline
     public static void main(String[] args) throws Exception {
-        // -- 1) Initialise crypto ------------------------------------------------
+        //Access environment paths
         KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
         String pwd = Files.readString(KEYSTORE_PATH).trim();
         char[] ksPwd = pwd.toCharArray();
         try (FileInputStream fis = new FileInputStream(KEYSTORE_FILE.toFile())) {
             ks.load(fis, ksPwd);
         }
+        //gather encryption key from key vault
         SecretKey aesKey = ((KeyStore.SecretKeyEntry) ks.getEntry(
                 "ticketing-aes", new KeyStore.PasswordProtection(ksPwd)
         )).getSecretKey();
         SecurityUtil.init(aesKey);
 
-        // -- 2) Load queue from event‑log / snapshot -----------------------------
+        // Load prerequisite logs and queue data
         TicketFileHandler fileHandler = new TicketFileHandler(LOG_PATH, SNAPSHOT_PATH);
         final PriorityQueue ticketQueue = fileHandler.loadQueueFromLog();
         Ticket.syncGlobalIDCounter(ticketQueue.getMaxTicketID());
 
-        // -- 3) Ensure we always persist a final encrypted snapshot --------------
+        //Ensures crash stable encrypted queue
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 User u = SessionManager.getInstance().getCurrentUser();
@@ -65,7 +51,7 @@ public class Main {
             }
         }));
 
-        // -- 4) Interactive loop -------------------------------------------------
+        //Until session logged out recursively call mainMenu
         try (Scanner scanner = new Scanner(System.in)) {
             while (!exitApp) {
                 if (SessionManager.getInstance().getCurrentUser() == null) {
@@ -79,10 +65,8 @@ public class Main {
         System.out.println("Goodbye.");
     }
 
-    // -------------------------------------------------------------------------
-    // Authentication menu (shown when there is no signed‑in user)
-    // -------------------------------------------------------------------------
 
+    //One time authentication system at run time
     private static void authMenu(Scanner sc) {
         System.out.println("\n=== Welcome to IT Ticketing System ===");
         System.out.println("1. Self‑Register");
@@ -96,10 +80,13 @@ public class Main {
                 String u = sc.nextLine();
                 System.out.print("Enter new password: ");
                 String p = sc.nextLine();
+                //Returns true if registration passed successfully
+                //Only permits basic security roles
                 boolean ok = RegistrationSystem.registerUser(u, p, UserRole.END_USER, SecurityLevel.BASE);
                 System.out.println(ok ? "Registration successful. Please login." : "Registration failed.");
             }
             case "2" -> {
+                //Basic login system
                 System.out.print("Username: ");
                 String u = sc.nextLine();
                 System.out.print("Password: ");
@@ -119,29 +106,26 @@ public class Main {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Main menu (after a user is logged‑in)
-    // -------------------------------------------------------------------------
-
+    //Once logged into verified account
     private static void mainMenu(Scanner sc, PriorityQueue q) throws IOException {
         User cur = SessionManager.getInstance().getCurrentUser();
         System.out.println("\n=== Main Menu (User: " + cur.getUsername() + ") ===");
-        System.out.println("0. Register User");
-        System.out.println("1. Create Ticket");
-        System.out.println("2. Claim Ticket");
-        System.out.println("3. View Top Ticket");
-        System.out.println("4. Update Ticket Priority");
-        System.out.println("5. Delete Ticket");
-        System.out.println("6. Complete Ticket");
-        System.out.println("7. List Tickets");
-        System.out.println("8. Search Tickets");
-        System.out.println("9. Save Queue Snapshot");
+        System.out.println("0. Register User"); //Allows user to register other users of relative security
+        System.out.println("1. Create Ticket"); //For end user
+        System.out.println("2. Claim Ticket"); //Technician claiming ticket
+        System.out.println("3. View Top Ticket"); //View highest priority in queue
+        System.out.println("4. Update Ticket Priority"); //Update claimed ticket priority
+        System.out.println("5. Delete Ticket"); //Admin role
+        System.out.println("6. Complete Ticket"); //Technician
+        System.out.println("7. List Tickets"); //Technician and admin view
+        System.out.println("8. Search Tickets"); //Simple technician search function
+        System.out.println("9. Save Queue Snapshot"); //Final non-auto snapshot reserved only for admins
         System.out.println("10. Logout");
         System.out.println("11. Exit");
         System.out.print("Select an option: ");
 
         switch (sc.nextLine().trim()) {
-            case "0" -> registerUser(sc, cur);
+            case "0" -> registerUser(sc);
             case "1" -> createTicket(sc, q, cur);
             case "2" -> claimTicket(q, cur);
             case "3" -> viewTopTicket(q);
@@ -157,11 +141,9 @@ public class Main {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Helper operations --------------------------------------------------------
-    // -------------------------------------------------------------------------
 
-    private static void registerUser(Scanner sc, User current) {
+    //Simply calls
+    private static void registerUser(Scanner sc) {
         System.out.print("Enter username for new account: ");
         String u = sc.nextLine();
         System.out.print("Enter password: ");
@@ -171,6 +153,8 @@ public class Main {
         System.out.print("Enter security level (BASE, ADMIN, TOPLEVEL): ");
         String levelStr = sc.nextLine().trim().toUpperCase();
         try {
+            //If user role is equal to or higher to registering security then pass
+            //Ordinal system
             UserRole role = UserRole.valueOf(roleStr);
             SecurityLevel lvl = SecurityLevel.valueOf(levelStr);
             boolean ok = RegistrationSystem.registerUser(u, p, role, lvl);
@@ -180,8 +164,8 @@ public class Main {
         }
     }
 
+    //Use priority queue snapshot
     private static void createTicket(Scanner sc, PriorityQueue q, User cur) {
-        // --- 1) choose type -------------------------------------------------------
         System.out.println("Select request type:");
         for (int i = 0; i < RequestType.values().length; i++) {
             System.out.printf("  %d. %s%n", i + 1, RequestType.values()[i]);

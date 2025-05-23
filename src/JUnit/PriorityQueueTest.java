@@ -55,7 +55,7 @@ class PriorityQueueTest {
         queue.addTicket(t1, baseUser);
         queue.addTicket(t2, baseUser);
 
-        // Now make T1 less urgent than T2
+        //T1 less urgent than T2
         assertTrue(queue.updateTicketPriority(t1.getTicketID(), 10, baseUser));
         assertEquals(t2, queue.peek());
     }
@@ -70,7 +70,7 @@ class PriorityQueueTest {
         queue.addTicket(c, baseUser);
 
         assertTrue(queue.deleteTicket(b.getTicketID(), baseUser));
-        List<Ticket> all = queue.getAllTickets();
+        MyList<Ticket> all = queue.getAllTickets();
         assertFalse(all.contains(b));
         assertEquals(2, queue.getSize());
     }

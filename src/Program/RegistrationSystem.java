@@ -6,15 +6,8 @@ public class RegistrationSystem {
 
     private static final String ACCOUNTS_FILE = "accounts.csv";
     private static final String ACCOUNTS_FILE_COPY = "accounts2.csv";
-    /**
-     * Registers a new user securely.
-     *
-     * @param username The new user's username.
-     * @param password The plain-text password.
-     * @param role     The desired role for the account (e.g., ADMIN, TECHNICIAN, END_USER).
-     * @param level    The desired security level for the account (e.g., BASE, ADMIN, TOPLEVEL).
-     * @return True if registration succeeds; false otherwise.
-     */
+
+    //Registers new user
     public static boolean registerUser(String username, String password, UserRole role, SecurityLevel level) {
         try {
             if(!SecurityUtil.isPasswordComplex(password)) {

@@ -26,7 +26,7 @@ class SecurityUtilTest {
         assertNotNull(cipher, "Cipher text should not be null");
         byte[] recovered = SecurityUtil.decryptGcm(cipher);
         assertArrayEquals(plaintext, recovered,
-                "After decrypting, we should get back the original plaintext");
+                "Decryption must return plain text");
     }
 
     @Test

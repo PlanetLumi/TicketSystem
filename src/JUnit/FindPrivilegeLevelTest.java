@@ -1,4 +1,4 @@
-package JUnit;// src/test/java/com/yourorg/ticketing/JUnit.FindPrivilegeLevelTest.java
+package JUnit;
 import Program.FindPrivilegeLevel;
 import Program.SecurityLevel;
 import Program.User;

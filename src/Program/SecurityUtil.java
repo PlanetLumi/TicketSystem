@@ -22,17 +22,12 @@ public class SecurityUtil {
     // Holds the single AES key loaded from the keystore
     private static SecretKey aesKey;
 
-    /**
-     * Initialize the AES key once at startup.
-     */
+   //initialise key store
     public static void init(SecretKey key) {
         aesKey = key;
     }
 
-    /**
-     * Encrypts data using AES-GCM with a fresh nonce.
-     * Returns nonce||ciphertext||tag.
-     */
+    //Encrypt using encryption cypher
     public static byte[] encryptGcm(byte[] plaintext) throws Exception {
         Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
         byte[] nonce = new byte[12];
@@ -46,9 +41,7 @@ public class SecurityUtil {
         return out;
     }
 
-    /**
-     * Decrypts data produced by encryptGcm: expects nonce||ciphertext||tag.
-     */
+    //Decryption algorithm using key vault key
     public static byte[] decryptGcm(byte[] input) throws Exception {
         Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
         byte[] nonce = Arrays.copyOfRange(input, 0, 12);
@@ -58,17 +51,16 @@ public class SecurityUtil {
         return cipher.doFinal(ciphertext);
     }
 
-    // -------------------------------
-    // Password hashing (use a proper KDF instead of this in production)
-    // -------------------------------
+    //Basic hashing
     public static String hashWithSalt(String password, String salt) throws Exception {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        digest.update(salt.getBytes("UTF-8"));
-        byte[] hashBytes = digest.digest(password.getBytes("UTF-8"));
+        MessageDigest digest = MessageDigest.getInstance("SHA-256"); //Hash algorithm
+        digest.update(salt.getBytes("UTF-8")); //Add salt
+        byte[] hashBytes = digest.digest(password.getBytes("UTF-8")); //Find value as byte
         StringBuilder sb = new StringBuilder();
         for (byte b : hashBytes) sb.append(String.format("%02x", b));
         return sb.toString();
     }
+    //GenerateSalt and hash and return
     public static String generateSaltedHash(String password) throws Exception {
         SecureRandom sr = SecureRandom.getInstanceStrong();
         byte[] saltBytes = new byte[16]; sr.nextBytes(saltBytes);
@@ -76,25 +68,27 @@ public class SecurityUtil {
         String hash = hashWithSalt(password, salt);
         return salt + "$" + hash;
     }
+    //Return true if password matches saved hashing + salt
     public static boolean verifyPassword(String password, String stored) throws Exception {
         String[] parts = stored.split("\\$");
         if (parts.length != 2) throw new IllegalArgumentException("Invalid stored password format");
         return hashWithSalt(password, parts[0]).equals(parts[1]);
     }
 
-    // -------------------------------
-    // Misc utilities
-    // -------------------------------
+    //Ordinal check of access rights
     public static boolean hasRequiredPrivileges(User user, SecurityLevel required) {
         return user.getSecurityLevel().ordinal() >= required.ordinal();
     }
+    //Return true if password has enough attributes
     public static boolean isPasswordComplex(String password) {
-        String pattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$";
+        String pattern = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$"; //Basic Regex of complexity
         return password.matches(pattern);
     }
+    //Input sanitisation for injection defence
     public static String sanitizeInput(String input) {
         return input.replaceAll("[^A-Za-z0-9 .,!?@_-]", "");
     }
+    //Remotely restrict file permissions for important files
     public static void setFilePermissions(String filePath) throws Exception {
         Path path = Paths.get(filePath);
         if (!Files.exists(path)) return;
@@ -105,32 +99,35 @@ public class SecurityUtil {
             Files.setPosixFilePermissions(path, perms);
         } catch (UnsupportedOperationException ignored) {}
     }
+    //Log anything for auditing
     public static boolean logEvent(String details, String logID) {
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-        String ip = getLocalIpAddress();
-        String mac = getLocalMacAddress();
-        String user = Optional.ofNullable(SessionManager.getInstance().getCurrentUser())
-                .map(User::getUsername).orElse("anonymous");
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME); //FIND DATE AND TIMER
+        String ip = getLocalIpAddress(); //log ip
+        String mac = getLocalMacAddress(); //log mac
+        String user = Optional.ofNullable(SessionManager.getInstance().getCurrentUser()) //Log session account
+                .map(User::getUsername).orElse("anonymous"); //SHould not be possible but default regardless
         String record = String.join(",", timestamp, details, ip, mac, user);
         System.out.println("[AUDIT] " + record);
-        String primary = FindAuditID.getAuditLogFileName(logID) + "primary.txt";
+        String primary = FindAuditID.getAuditLogFileName(logID) + "primary.txt"; //Save to both
         String backup  = FindAuditID.getAuditLogFileName(logID) + "backup.txt";
         try (FileWriter w1 = new FileWriter(primary, true);
              FileWriter w2 = new FileWriter(backup, true)) {
             w1.write(record + System.lineSeparator());
             w2.write(record + System.lineSeparator());
-            return true;
+            return true; //Return true if both saving successful
         } catch (IOException e) {
             e.printStackTrace();
             return false;
         }
     }
+    //SImple ID address helper
     public static String getLocalIpAddress() {
         try { return InetAddress.getLocalHost().getHostAddress(); }
         catch (UnknownHostException e) { return "UNKNOWN_IP"; }
     }
     public static String getLocalMacAddress() {
         try {
+            //Pull MacAddress from hardware
             NetworkInterface ni = NetworkInterface.getByInetAddress(InetAddress.getLocalHost());
             if (ni == null) return "UNKNOWN_MAC";
             byte[] mac = ni.getHardwareAddress();
@@ -142,6 +139,7 @@ public class SecurityUtil {
             return "UNKNOWN_MAC";
         }
     }
+    //Self-explanatory name, turns binary file to string
     public static String readFileAsString(String path) throws IOException, IOException {
         return new String(Files.readAllBytes(Paths.get(path)), "UTF-8");
     }

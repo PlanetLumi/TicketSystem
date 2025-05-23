@@ -11,7 +11,7 @@ public class FindAuditID {
     public static String getAuditLogFileName(String auditID) {
         switch (auditID) {
             case "ATTEMPT":
-                // Audit ID 1: Login attempts (both successful and failed can be split further if needed)
+                // Audit ID 1: Login attempts
                 return "login_attempts.log";
             case "LOGINSUCCESS":
                 // Audit ID 2: Successful login attempts

@@ -1,4 +1,4 @@
-// src/test/java/JUnit/TicketFileHandlerTest.java
+
 package JUnit;
 
 import Program.*;
@@ -16,7 +16,7 @@ class TicketFileHandlerTest {
 
     @Test
     void logAndLoadReplayAddUpdateDelete() throws IOException {
-        // Ensure SessionManager has a user (so addTicket's user!=null)
+        // Ensure SessionManager has a user
         SessionManager.getInstance().setCurrentUser(
                 new User("tester", "hash", UserRole.ADMIN, SecurityLevel.ADMIN)
         );
@@ -36,13 +36,13 @@ class TicketFileHandlerTest {
 
         h.logDelete(t2.getTicketID());
 
-        // Replay the log
+        // Replay log
         PriorityQueue q = h.loadQueueFromLog();
-        List<Ticket> tickets = q.getAllTickets();
+        MyList<Ticket> tickets = q.getAllTickets();
 
-        // Only t1 should remain, with updated priority
+        //update priority
         assertEquals(1, tickets.size());
-        Ticket replayed = tickets.getFirst();
+        Ticket replayed = tickets.get(1);
         assertEquals(t1.getTicketID(), replayed.getTicketID());
         assertEquals(9, replayed.getPriority());
     }
@@ -53,16 +53,13 @@ class TicketFileHandlerTest {
     }
     @Test
     void malformedLinesAreSkipped() throws IOException {
-        // Again, set a user so loadQueueFromLog won't NPE
         SessionManager.getInstance().setCurrentUser(
                 new User("tester", "hash", UserRole.ADMIN, SecurityLevel.ADMIN)
         );
-
         Path badLog = tempDir.resolve("bad.log");
         java.nio.file.Files.writeString(badLog, "MALFORMED LINE\n");
-
         TicketFileHandler h = new TicketFileHandler(badLog.toString(), null);
-        // Should not throw and should return an empty queue
+        //should return an empty queue
         PriorityQueue q = h.loadQueueFromLog();
         assertNotNull(q);
         assertTrue(q.isEmpty());

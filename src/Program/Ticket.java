@@ -11,14 +11,15 @@ public class Ticket implements Serializable {
     private String creator;
     private String owner;       // assigned technician, if any
     private int priority;     // smaller number = higher priority (1 = highest)
-    private SecurityLevel securityLevel; // field for security level
+    private SecurityLevel securityLevel;
     private TicketStatus status;
     private final RequestType type;
 
     public Ticket(RequestType type, String title, String creator) {
         this(type, title, creator,
-                type.getDefaultPriority(),               // auto-priority
-                type.getDefaultLvl());                   // auto-security
+                //set default levels
+                type.getDefaultPriority(),
+                type.getDefaultLvl());
     }
     public Ticket(String title,
                   String creator,
@@ -30,6 +31,7 @@ public class Ticket implements Serializable {
                 priority,
                 level);
     }
+    //Constructor for ticket data
     public Ticket(RequestType type, String title, String creator,
                   int priorityOverride, SecurityLevel levelOverride) {
         this.ticketID = ++globalIDCounter;
@@ -40,19 +42,17 @@ public class Ticket implements Serializable {
         this.securityLevel = levelOverride;
         this.status   = TicketStatus.OPEN;
     }
-    // Ticket.java  (add near the other ctors)
 
     public RequestType getType() { return type; }
 
 
     public static synchronized void syncGlobalIDCounter(int highestID) {
-        // If globalIDCounter is already higher, leave it.
-        // If highestID is bigger, set it to highestID so new tickets won't reuse an old ID.
+        //Finds current GlobalID to stop outdating
         if (highestID > globalIDCounter) {
             globalIDCounter = highestID;
         }
     }
-    // Getters and setters
+    // Getters etc
     public int getTicketID() {
         return ticketID;
     }
@@ -89,7 +89,7 @@ public class Ticket implements Serializable {
         this.securityLevel = securityLevel;
     }
 
-    // Optional: a setter to change ticket status
+    //Change status
     public void setStatus(TicketStatus newStatus) {
         this.status = newStatus;
     }public static void setGlobalCounter(int newVal) {
@@ -99,6 +99,7 @@ public class Ticket implements Serializable {
     public TicketStatus getStatus() {
         return this.status;
     }
+    //PULL DETAILS AS STRING FOR AUDIT AND DISPLAY
     @Override
     public String toString() {
         return "Program.Ticket[ID=" + ticketID +
