@@ -102,7 +102,7 @@ public class Ticket implements Serializable {
     //PULL DETAILS AS STRING FOR AUDIT AND DISPLAY
     @Override
     public String toString() {
-        return "Program.Ticket[ID=" + ticketID +
+        return "Ticket[ID=" + ticketID +
                 ", title='" + title + '\'' +
                 ", priority=" + priority + "]";
     }
