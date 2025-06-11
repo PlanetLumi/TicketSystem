@@ -67,7 +67,7 @@ public class Main {
 
 
     //One time authentication system at run time
-    private static void authMenu(Scanner sc) {
+    private static void authMenu(Scanner sc) throws IOException {
         System.out.println("\n=== Welcome to IT Ticketing System ===");
         System.out.println("1. Self‑Register");
         System.out.println("2. Login");
@@ -92,18 +92,14 @@ public class Main {
                 System.out.print("Password: ");
                 String p = sc.nextLine();
                 try {
-                    if (LoginSystem.login(u, p)) {
-                        System.out.println("Login successful. Welcome, " + u + "!\n");
-                    } else {
-                        System.out.println("Login failed. Try again.");
-                    }
-                } catch (IOException e) {
-                    System.out.println("Login error: " + e.getMessage());
+                    LoginSystem.login(u, p);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
             }
             case "3" -> exitApp = true;
-            default -> System.out.println("Invalid option.");
-        }
+                    default -> System.out.println("Invalid option.");
+            }
     }
 
     //Once logged into verified account
@@ -269,7 +265,13 @@ public class Main {
     }
 
     private static void listTickets(PriorityQueue q, User cur) {
-        q.listAccessibleTickets(cur).forEach(System.out::println);
+        // grab the results first
+        MyList<Ticket> tickets = q.listAccessibleTickets(cur);
+        if (tickets.size() == 0) {
+            System.out.println("No tickets found");
+        } else {
+            tickets.forEach(System.out::println);
+        }
     }
 
     private static void searchTickets(Scanner sc, PriorityQueue q, User cur) {
